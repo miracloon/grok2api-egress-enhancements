@@ -1,5 +1,7 @@
 # Grok2API 出口质量守护
 
+> **此仓库是个人使用的 fork。** 仅为 `cpa-plugin/` 的管理页面补上 CPA-Manager-Plus `enc::v2::` 凭据兼容（保留 v1），解决操作时的 401；不向原仓库提 PR，也不改 Grok2API/sidecar 的运行逻辑。自行编译并维护 CPA 插件，细节见 [cpa-plugin/README.md](./cpa-plugin/README.md)。以下保留上游原有说明。
+
 **主推 [lij768423-svg/grok2api](https://github.com/lij768423-svg/grok2api) + Quality Guard sidecar。**  
 CPA 插件在 `cpa-plugin/`，不是默认交付。
 
