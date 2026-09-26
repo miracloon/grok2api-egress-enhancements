@@ -14,6 +14,10 @@
 | 能力 | Management UI + Usage Plugin + Scheduler + Request Interceptor |
 | License | MIT（见仓库根目录 `LICENSE`） |
 
+### 此 fork 的用途
+
+个人部署使用，不准备向上游提交 PR。CPA 插件内嵌页面原本只识别管理面板的 `enc::v1::` 凭据；CPA-Manager-Plus 持久化的是 `enc::v2::`，导致插件操作返回 401。此 fork 优先读取当前面板凭据、兼容 v2 并保留 v1 回退；其余插件功能保持上游行为。自行构建并在部署时保留此版本，避免插件升级覆盖修复。
+
 ---
 
 ## 它解决什么问题

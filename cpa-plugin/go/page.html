@@ -436,23 +436,37 @@
       const decodeStoredValue = (storageKey) => {
         let raw = localStorage.getItem(storageKey) || '';
         if (!raw) return null;
-        if (raw.startsWith('enc::v1::')) {
-          const encoded = atob(raw.slice(9));
-          const value = Uint8Array.from(encoded, (char) => char.charCodeAt(0));
-          const key = new TextEncoder().encode('cli-proxy-api-webui::secure-storage|' + location.host + '|' + navigator.userAgent);
-          for (let index = 0; index < value.length; index += 1) value[index] ^= key[index % key.length];
-          raw = new TextDecoder().decode(value);
+        const version = raw.startsWith('enc::v2::') ? 'v2' : raw.startsWith('enc::v1::') ? 'v1' : null;
+        // Unknown or malformed ciphertext must never be sent as a bearer token.
+        if (!version && raw.startsWith('enc::')) return null;
+        if (version) {
+          try {
+            const encoded = atob(raw.slice(9));
+            const value = Uint8Array.from(encoded, (char) => char.charCodeAt(0));
+            const salt = version === 'v2'
+              ? 'cli-proxy-api-webui::secure-storage|v2|' + location.host
+              : 'cli-proxy-api-webui::secure-storage|' + location.host + '|' + navigator.userAgent;
+            const key = new TextEncoder().encode(salt);
+            for (let index = 0; index < value.length; index += 1) value[index] ^= key[index % key.length];
+            raw = new TextDecoder('utf-8', {fatal: true}).decode(value);
+          } catch (_) { return null; }
         }
-        try { return JSON.parse(raw); } catch (_) { return raw; }
+        try { return JSON.parse(raw); } catch (_) { return version ? null : raw; }
       };
       try {
-        for (const storageKey of ['authToken', 'managementKey', 'cli-proxy-auth']) {
-          const decoded = decodeStoredValue(storageKey);
-          if (typeof decoded === 'string' && decoded) return decoded;
+        const keyFrom = (decoded) => {
+          if (typeof decoded === 'string') return decoded;
           if (decoded && typeof decoded === 'object') {
             const key = decoded.state?.managementKey || decoded.managementKey || decoded.token;
-            if (typeof key === 'string' && key) return key;
+            return typeof key === 'string' ? key : '';
           }
+          return '';
+        };
+        // When a CPAMP session exists, never fall back to stale legacy credentials.
+        if (localStorage.getItem('cli-proxy-auth')) return keyFrom(decodeStoredValue('cli-proxy-auth'));
+        for (const storageKey of ['managementKey', 'authToken']) {
+          const key = keyFrom(decodeStoredValue(storageKey));
+          if (key) return key;
         }
         return '';
       } catch (_) { return ''; }
